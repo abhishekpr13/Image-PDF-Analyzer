@@ -45,7 +45,7 @@ const app = express();
 
 app.use(cors())
 app.use(express.json())
-app.use('/api/file',FileRoute)
+app.use('/api/files',FileRoute)
 
 app.get('/',(req,res)=>{
     res.json({message: "Image-PDF-Analyzer is running!"})

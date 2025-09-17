@@ -1,6 +1,8 @@
 import express  from "express";
 import FileModel from "../models/file"
-import { error } from "console";
+import path from "path";
+
+
 
 
 const router = express.Router()
@@ -63,6 +65,27 @@ router.delete('/:id',async(req,res)=>{
     } catch(error){
         res.status(500).json({
             error: " Failed to delete" 
+        })
+    }
+})
+
+router.get('/download/:id',async(req,res)=>{
+    try {
+
+        const fileId= req.params.id;
+        const file = await FileModel.findById(fileId);
+        
+
+        if (!file) {
+            return res.status(404).json({ error: 'File not found' });
+    }
+    const filePath = file.filePath;
+    const absolutePath = path.resolve(filePath);
+    res.sendFile(absolutePath);
+
+    }catch(error){
+        res.status(500).json({
+            error: " Failed to delete"
         })
     }
 })
