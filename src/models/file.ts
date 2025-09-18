@@ -8,6 +8,7 @@ interface IFile extends Document {
     mimeType: string;
     uploadDate: Date;
     analysisResult?: string;
+    userId: string; 
 }
 
 const FileSchema: Schema = new Schema({   
@@ -17,7 +18,8 @@ const FileSchema: Schema = new Schema({
     fileSize: {type: Number, required: true},       
     mimeType: {type: String, required: true},        
     uploadDate: {type: Date, default: Date.now},     
-    analysisResult: {type: String, required: false}  
+    analysisResult: {type: String, required: false},
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true }
 });
 
 export default mongoose.model<IFile>('File', FileSchema);

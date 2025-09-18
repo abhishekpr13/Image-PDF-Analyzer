@@ -5,6 +5,8 @@ import path from "path";
 import mongoose from "mongoose";
 import FileModel from "./models/file"
 import FileRoute from "./routes/fileRoutes";
+import authrouter from "./routes/authRoutes";
+import { authenticateToken, AuthRequest } from "./middleware/auth";
 
 
 // Add mongo db connection 
@@ -46,12 +48,13 @@ const app = express();
 app.use(cors())
 app.use(express.json())
 app.use('/api/files',FileRoute)
+app.use('/api/auth',authrouter)
 
 app.get('/',(req,res)=>{
     res.json({message: "Image-PDF-Analyzer is running!"})
 })
 
-app.post ('/api/upload',upload.single('file'),async(req,res)=>{
+app.post ('/api/upload', authenticateToken, upload.single('file'), async(req: AuthRequest, res)=>{
     if (!req.file){
         return res.status(400).json({
             error : 'File not uploaded succesfully'
@@ -64,6 +67,7 @@ app.post ('/api/upload',upload.single('file'),async(req,res)=>{
             filePath: req.file.path,
             fileSize: req.file.size,
             mimeType: req.file.mimetype,
+            userId: req.user.userId 
             
         });
 

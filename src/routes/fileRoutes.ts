@@ -1,79 +1,58 @@
 import express  from "express";
-import FileModel from "../models/file"
+import FileModel from "../models/file";
+import { authenticateToken, AuthRequest } from "../middleware/auth";
+
 import path from "path";
-
-
 
 
 const router = express.Router()
 
-router.get('/',async(req,res)=>{
+
+router.get('/:id', authenticateToken, async(req: AuthRequest, res)=>{
     try{
-        const files = await FileModel.find()
-        res.json({
-            message: "File retrived succesfully!!",
-            count : files.length,
-            files: files
-
-        })
-
-    }catch(error){
-        res.status(500).json({
-            error: "Failed to retrive the file"
-          
-        })
-    }
-});
-
-router.get('/:id', async(req,res)=>{
-    try{
-
         const fileID = req.params.id;
-        const file = await FileModel.findById(fileID);
+        const file = await FileModel.findOne({ _id: fileID, userId: req.user.userId }); // Add ownership check
 
         if (!file){
-            return res.status(500).json({
+            return res.status(404).json({ 
                 error: "File not found"
             })
         }
-
         res.json(file)
-
-
     } catch(error) {
-        res.status(500).json({
-            error : " Failed to retrive the id"
+        res.status(500).json({ 
+            error : "Failed to retrieve the file"
         })
     }
 })
 
-router.delete('/:id',async(req,res)=>{
+router.delete('/:id',authenticateToken,async(req:AuthRequest,res)=>{
     try {
         const delete_id = req.params.id;
-        const file = await FileModel.findByIdAndDelete(delete_id)
-
+        const file = await FileModel.findOne({ _id: delete_id, userId: req.user.userId });
 
         if (!file){
             return res.status(500).json({
                 error: "File not found"
             })
         }
+        await FileModel.findByIdAndDelete(delete_id);
         res.json({
             message: " Suesfully deleted",
             id : delete_id
         })
     } catch(error){
-        res.status(500).json({
+        res.status(404).json({
             error: " Failed to delete" 
         })
     }
 })
 
-router.get('/download/:id',async(req,res)=>{
+router.get('/download/:id',authenticateToken,async(req:AuthRequest,res)=>{
     try {
 
         const fileId= req.params.id;
-        const file = await FileModel.findById(fileId);
+        const file = await FileModel.findOne({ _id: fileId, userId: req.user.userId });
         
 
         if (!file) {
@@ -84,10 +63,24 @@ router.get('/download/:id',async(req,res)=>{
     res.sendFile(absolutePath);
 
     }catch(error){
-        res.status(500).json({
+        res.status(404).json({
             error: " Failed to delete"
         })
     }
+})
+
+router.get('/',authenticateToken,async(req:AuthRequest,res)=>{
+    try {
+        const files = await FileModel.find({userId: req.user.userId});
+        res.json({
+            message: 'Files retrieved successfully',
+            count: files.length,
+            files: files
+        });
+    } catch(error){
+        return res.status(404).json({error:" Authentication faile "})
+    }
+
 })
 
 
