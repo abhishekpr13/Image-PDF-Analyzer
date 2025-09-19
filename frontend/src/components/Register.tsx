@@ -35,7 +35,8 @@ function Register({onRegister, switchtoLogin}:RegisterProps){
             }
             else {
                 const errorData = await response.json();
-                seterror(errorData.erroData || 'Failed to Register')
+                seterror(errorData.error || 'Failed to Register')  
+
             }
         } catch(error){
             console.log("Unable to register", error)
