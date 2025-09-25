@@ -1,18 +1,10 @@
 import express from "express"
 import cors from "cors";
 import multer from "multer";
-import path from "path";
-import mongoose from "mongoose";
-import FileModel from "./models/file"
 import FileRoute from "./routes/fileRoutes";
 import authrouter from "./routes/authRoutes";
 import { authenticateToken, AuthRequest } from "./middleware/auth";
-
-
-// Add mongo db connection 
-mongoose.connect('mongodb+srv://abhishek139sharma_db_user:qAQSjPDmA0a1GW80@cluster0.zimscde.mongodb.net/image-analyzer?retryWrites=true&w=majority&appName=Cluster0')
-  .then(() => console.log('Connected to MongoDB Atlas'))
-  .catch(err => console.error('MongoDB connection error:', err));
+import { prisma } from "./lib/Prisma";
 
 
 const storage = multer.diskStorage({
@@ -35,10 +27,10 @@ const upload = multer({ storage: storage,
             console.log(`Fille is in accepteable formate: ${file.mimetype}`)
         }
         else {
-            cb(null, false);
-            cb(new Error('Invalid file type'))
-            console.log('Invalid file type attempted');
-    }
+            const error = new Error('Invalid file type. Only images and PDFs allowed.');
+            cb(error);  
+            console.log('Invalid file type attempted');         
+        }
     }
  })
 
@@ -54,38 +46,34 @@ app.get('/',(req,res)=>{
     res.json({message: "Image-PDF-Analyzer is running!"})
 })
 
-app.post ('/api/upload', authenticateToken, upload.single('file'), async(req: AuthRequest, res)=>{
+app.post('/api/upload', authenticateToken, upload.single('file'), async(req: AuthRequest, res)=>{
     if (!req.file){
         return res.status(400).json({
-            error : 'File not uploaded succesfully'
+            error : 'File not uploaded successfully'
         });
     }
     try {
-        const newFile = new FileModel({
-            originalName: req.file.originalname,
-            fileName: req.file.filename,
-            filePath: req.file.path,
-            fileSize: req.file.size,
-            mimeType: req.file.mimetype,
-            userId: req.user.userId 
-            
+        const newFile = await prisma.file.create({
+            data: {
+                originalName: req.file.originalname,
+                fileName: req.file.filename,
+                filePath: req.file.path,
+                fileSize: req.file.size,
+                mimeType: req.file.mimetype,
+                userId: req.user.userId
+            }
         });
 
-        const savedFile = await newFile.save();
         res.json({
-        message: 'File uploaded successfully and loaded to the databse !',
-        fileId: savedFile._id,
-        originalName: savedFile.originalName,
-        size: savedFile.fileSize
-    })
+            message: 'File uploaded successfully and saved to database!',
+            fileId: newFile.id, 
+            originalName: newFile.originalName,
+            size: newFile.fileSize
+        });
     } catch(error){
-        res.status(500).json({error: 'Failed to save to the databse'})
+        res.status(500).json({error: 'Failed to save to database'});
     }
-    
-})
-
-
-
+});
 
 const port = 8000;
 

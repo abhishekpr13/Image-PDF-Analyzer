@@ -1,5 +1,5 @@
 import express  from "express";
-import FileModel from "../models/file";
+import { prisma } from "../lib/Prisma";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
 
 import path from "path";
@@ -11,8 +11,12 @@ const router = express.Router()
 router.get('/:id', authenticateToken, async(req: AuthRequest, res)=>{
     try{
         const fileID = req.params.id;
-        const file = await FileModel.findOne({ _id: fileID, userId: req.user.userId }); // Add ownership check
-
+        const file = await prisma.file.findFirst({ 
+            where: { 
+                id: fileID, 
+                userId: req.user.userId 
+            } 
+        });
         if (!file){
             return res.status(404).json({ 
                 error: "File not found"
@@ -29,14 +33,19 @@ router.get('/:id', authenticateToken, async(req: AuthRequest, res)=>{
 router.delete('/:id',authenticateToken,async(req:AuthRequest,res)=>{
     try {
         const delete_id = req.params.id;
-        const file = await FileModel.findOne({ _id: delete_id, userId: req.user.userId });
+        const file = await prisma.file.findFirst({ 
+            where: { 
+                id: delete_id, 
+                userId: req.user.userId 
+            } 
+        });
 
         if (!file){
             return res.status(500).json({
                 error: "File not found"
             })
         }
-        await FileModel.findByIdAndDelete(delete_id);
+        await prisma.file.delete({ where: { id: delete_id } });
         res.json({
             message: " Suesfully deleted",
             id : delete_id
@@ -52,7 +61,12 @@ router.get('/download/:id',authenticateToken,async(req:AuthRequest,res)=>{
     try {
 
         const fileId= req.params.id;
-        const file = await FileModel.findOne({ _id: fileId, userId: req.user.userId });
+        const file = await prisma.file.findFirst({ 
+            where: { 
+                id: fileId, 
+                userId: req.user.userId 
+            } 
+        });
         
 
         if (!file) {
@@ -71,7 +85,11 @@ router.get('/download/:id',authenticateToken,async(req:AuthRequest,res)=>{
 
 router.get('/',authenticateToken,async(req:AuthRequest,res)=>{
     try {
-        const files = await FileModel.find({userId: req.user.userId});
+        const files = await prisma.file.findMany({ 
+            where: { 
+                userId: req.user.userId 
+            } 
+        });
         res.json({
             message: 'Files retrieved successfully',
             count: files.length,
@@ -82,6 +100,4 @@ router.get('/',authenticateToken,async(req:AuthRequest,res)=>{
     }
 
 })
-
-
 export default router;
